@@ -1,0 +1,46 @@
+/* ===== Design tokens + reset ===== */
+:root{
+  --s:min(34vh,60vw);
+  --bg1:#16253f; --bg2:#05070d;
+  --ink:#e8edf7; --panel:#101827; --line:#2a3550;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme=dark]){
+    --bg1:#dfe8f7; --bg2:#b9c6dd;
+    --ink:#13203a; --panel:#f4f7fd; --line:#c4cfe3;
+    color-scheme:light;
+  }
+}
+*{box-sizing:border-box;margin:0}
+html,body{
+  height:100%;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 35%,var(--bg1),var(--bg2) 75%);
+  color:var(--ink);
+  font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;
+}
+
+/* ===== Refinement: larger, cleaner type ===== */
+:root{--s:min(36vh,60vw)}
+@media (max-width:480px){:root{--s:min(34vh,56vw)}}
+html,body,#drawer button,#drawer select,.pg,.pg button,.pg input{
+  font-family:"Manrope","SF Pro Display","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  html,body{
+    background:
+      radial-gradient(1.5px 1.5px at 12% 22%,#fff9,#0000),
+      radial-gradient(1px 1px at 78% 14%,#fffb,#0000),
+      radial-gradient(1.5px 1.5px at 86% 72%,#fff8,#0000),
+      radial-gradient(1px 1px at 22% 80%,#fff9,#0000),
+      radial-gradient(1px 1px at 44% 9%,#fff7,#0000),
+      radial-gradient(ellipse at 50% 35%,var(--bg1),var(--bg2) 75%);
+  }
+}
+
+/* ===== Single-screen layout: no scroll ===== */
+:root{--s:min(37vh,62vw)}
+@media (max-width:480px){:root{--s:min(34vh,56vw)}}
