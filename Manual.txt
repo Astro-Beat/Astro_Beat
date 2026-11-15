@@ -1,0 +1,84 @@
+# AstroBeat - Manual de Operadores y Guía Técnica
+
+Documento de traspaso técnico. Describe la arquitectura, el flujo de datos y las instrucciones exactas para modificar, extender y compilar el simulador.
+
+## 1. Stack Tecnológico
+- **HTML5**: Estructura del DOM y contenedores de pantalla.
+- **CSS3 (Vanilla)**: Diseño del reloj físico, transiciones, animaciones (shake, pulse) y responsive.
+- **JavaScript (ES2020, Vanilla)**: Lógica del núcleo, simulación (SIL), enrutamiento de pantallas y manipulación del DOM. Sin frameworks ni librerías externas. Se usa el patrón IIFE (`window.AstroBeat`) en lugar de ES Modules para garantizar compatibilidad con `file://` (CORS).
+
+## 2. Estructura de Archivos
+- **`index.html`**: Entorno de desarrollo. Carga los archivos CSS y JS modulares.
+- **`astrobeat-watch.html`**: Build final. Un solo archivo autocontenido, sin dependencias, listo para abrir con doble clic.
+- **`css/`**: 4 archivos (`01-tokens`, `02-watch`, `03-screens`, `04-drawer`). Definen variables, cuerpo físico del reloj y estilos de UI.
+- **`js/`**: 12 archivos con la arquitectura Ports & Adapters:
+  - `01-config.js`: Fuente única de verdad (umbrales `TH`, constantes `CFG`).
+  - `02-util.js`: Funciones matemáticas, PRNG determinista (`mulberry32`).
+  - `03-port.js`: Interfaz `ITelemetrySource` y datos de escenarios.
+  - `04-adapters.js`: Implementaciones del puerto (Simulador, Sliders, Stub de hardware).
+  - `05-core.js`: Núcleo portable (Analítica, Triage, Wellness, Causa Raíz).
+  - `06-state.js`: Estado global mutable (`G`, `SRC`, `AB.K`).
+  - `07-screens.js`: Las 16 vistas renderizadas desde el ViewModel.
+  - `08-ui.js`: Navegación, eventos, teclado, corona y renderizado.
+  - `09-drawer.js`: Panel de control lateral (☰).
+  - `10-loop.js`: Ciclo de simulación (`tick`, `setScenario`).
+  - `11-selftest.js`: Pruebas unitarias de invariantes de seguridad.
+  - `12-main.js`: Bootstrap de la aplicación.
+- **`build/`**: Scripts (`build-single.js`, `build-single.ps1`) para compilar el HTML final.
+
+## 3. Arquitectura del Núcleo (Ports & Adapters)
+El sistema está desacoplado. El núcleo (`05-core.js`) solo conoce la interfaz `ITelemetrySource`:
+- **Puerto**: Define `next()`, `reset()` y `setScenario()`.
+- **Adaptadores**: 
+  - `ScenarioSimulatorAdapter`: Genera telemetría falsa determinista (semilla 42).
+  - `ManualSlidersAdapter`: Permite inyectar valores con sliders.
+  - `RealDeviceAdapter`: Stub vacío para conectar hardware real (WebBluetooth/Socket) a futuro.
+- **Core**: Recibe un `TelemetryFrame`, procesa medias móviles, regresiones, RMSSD e índice de estrés. Emite un `ViewModel` (`AB.K.V`) que la UI consume.
+
+## 4. Flujo de Datos (Simulation Loop)
+1. El loop llama a `src.next()` (el adaptador activo).
+2. Aplica sensores inválidos (nulls) o síntomas declarados por el usuario.
+3. El Core procesa el frame y calcula el estado de triage (Normal, Atención, Crítico).
+4. La UI detecta cambios de estado (ej. pasa a Crítico), dispara la pantalla roja (Emergencia) y emite un pitido (Web Audio API).
+5. Se re-renderizan las pantallas adyacentes en el DOM.
+
+## 5. Guía para Mejoras y Modificaciones
+
+### Agregar un nuevo sensor
+1. En `01-config.js`: Añadir a `KEYS`, `TH` (umbrales), `RANGE` y `SIGMA`.
+2. En `03-port.js`: Añadir a los frames base y escenarios.
+3. En `05-core.js`: Añadir al dominio correspondiente (`bio` o `env`).
+4. En `07-screens.js`: Añadir una fila de visualización.
+
+### Agregar una nueva pantalla
+1. En `07-screens.js`: Crear una función `(V) => \`HTML\`` en el array `SCREENS`.
+2. Si debe estar en el menú, añadirla al grid en la pantalla 7.
+3. Usar la clase `.fill` para el contenido elástico. El sistema auto-escala la fuente.
+
+### Modificar umbrales de triage
+- Editar el objeto `TH` en `01-config.js` y recompilar (permanente).
+- O usar la pantalla de Configuración en la UI (en caliente, se pierde al recargar).
+
+### Conectar Hardware Real
+1. Implementar `RealDeviceAdapter.next()` en `04-adapters.js` usando WebBluetooth.
+2. Asegurar que retorne un objeto con las claves `hr, spo2, temp, p, co2, rad, rr, t, dtMs`.
+3. Asignar `AB.src = AB.SRC.real` en `06-state.js`.
+
+## 6. Invariantes de Seguridad
+El sistema garantiza y prueba mediante autotest que:
+- El triage (estado global) NUNCA es alterado por los créditos de bienestar.
+- La mitigación de estrés NUNCA aplica en estado Crítico (Rojo).
+- La mitigación NUNCA altera las mediciones de telemetría crudas.
+
+## 7. Compilación (Build)
+Para actualizar `astrobeat-watch.html` tras editar los módulos:
+- Usando Node: `node build/build-single.js`
+- Usando PowerShell: `powershell -ExecutionPolicy Bypass -File build/build-single.ps1`
+El script concatenará todo el CSS y JS inline en el HTML final. No editar el HTML final directamente.
+
+## 8. Autotest y Diagnóstico
+- **Ejecutar pruebas**: Abrir `astrobeat-watch.html?selftest=1` y revisar la consola (F12). Debe imprimir `AstroBeat selftest OK`.
+- **Depurar escenarios**: Abrir el panel (☰), pausar el loop, usar el botón "Paso" y revisar la consola de eventos en el drawer.
+- **Fallos comunes**: 
+  - Los sonidos no se reproducen si no hay interacción previa del usuario (política de autoplay).
+  - Los sliders no hacen nada si no se selecciona el escenario "Manual (sliders)".

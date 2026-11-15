@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AstroBeat · Smartwatch SIL</title>
+<!-- Sin CDN. Si quieres Manrope, descomenta:
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+-->
+<style>
+/* ==== css/01-tokens.css ==== */
+/* ===== Design tokens + reset ===== */
+:root{
+  --s:min(34vh,60vw);
+  --bg1:#16253f; --bg2:#05070d;
+  --ink:#e8edf7; --panel:#101827; --line:#2a3550;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme=dark]){
+    --bg1:#dfe8f7; --bg2:#b9c6dd;
+    --ink:#13203a; --panel:#f4f7fd; --line:#c4cfe3;
+    color-scheme:light;
+  }
+}
+*{box-sizing:border-box;margin:0}
+html,body{
+  height:100%;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 35%,var(--bg1),var(--bg2) 75%);
+  color:var(--ink);
+  font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;
+}
+
+/* ===== Refinement: larger, cleaner type ===== */
+:root{--s:min(36vh,60vw)}
+@media (max-width:480px){:root{--s:min(34vh,56vw)}}
+html,body,#drawer button,#drawer select,.pg,.pg button,.pg input{
+  font-family:"Manrope","SF Pro Display","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  html,body{
+    background:
+      radial-gradient(1.5px 1.5px at 12% 22%,#fff9,#0000),
+      radial-gradient(1px 1px at 78% 14%,#fffb,#0000),
+      radial-gradient(1.5px 1.5px at 86% 72%,#fff8,#0000),
+      radial-gradient(1px 1px at 22% 80%,#fff9,#0000),
+      radial-gradient(1px 1px at 44% 9%,#fff7,#0000),
+      radial-gradient(ellipse at 50% 35%,var(--bg1),var(--bg2) 75%);
+  }
+}
+
+/* Simulator environment: the watch display keeps its e-ink palette. */
+html body{
+  background:
+    radial-gradient(1.5px 1.5px at 12% 22%,#fff9,#0000),
+    radial-gradient(1px 1px at 78% 14%,#fff8,#0000),
+    radial-gradient(1.5px 1.5px at 86% 72%,#fff7,#0000),
+    radial-gradient(1px 1px at 22% 80%,#fff8,#0000),
+    radial-gradient(1px 1px at 44% 9%,#fff6,#0000),
+    radial-gradient(ellipse at 50% 35%,#152746 0,#05070d 72%);
+}
+
+/* ===== Single-screen layout: no scroll ===== */
+:root{--s:min(37vh,62vw)}
+@media (max-width:480px){:root{--s:min(34vh,56vw)}}
+</style>
+<style>
+/* ==== css/02-watch.css ==== */
+/* ===== Watch physical body ===== */
+#stage{height:100%;display:flex;align-items:center;justify-content:center}
+#watch{display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3vh 4vh rgba(0,0,0,.55))}
+.strap{width:calc(var(--s)*.64);height:calc(var(--s)*.62);
+  background:repeating-linear-gradient(90deg,#222733 0 2px,#2f3544 2px 6px);
+  border-left:3px solid #3a4152;border-right:3px solid #3a4152;position:relative}
+.strap::before{content:"";position:absolute;inset:0 .35em;border-left:2px dashed #596177;border-right:2px dashed #596177}
+.strap.top{border-radius:1.4em 1.4em 0 0;margin-bottom:calc(var(--s)*-.06);background-color:#262b38;
+  mask-image:linear-gradient(#0000,#000 18%);-webkit-mask-image:linear-gradient(#0000,#000 18%)}
+.strap.bot{border-radius:0 0 1.4em 1.4em;margin-top:calc(var(--s)*-.06);
+  mask-image:linear-gradient(#000 60%,#0000);-webkit-mask-image:linear-gradient(#000 60%,#0000)}
+.strap.bot::after{content:"";position:absolute;left:50%;top:22%;width:.9em;height:.9em;margin-left:-.45em;
+  border-radius:50%;background:radial-gradient(#000 40%,#555 45%);box-shadow:0 2.2em 0 #000,0 4.4em 0 #000}
+.case{position:relative;z-index:2;padding:calc(var(--s)*.065);border-radius:calc(var(--s)*.34);
+  background:linear-gradient(135deg,#f3f5f9,#8d95a6 45%,#d9dde6 60%,#7b8396);
+  box-shadow:inset 0 0 0 2px #fff8,inset 0 -6px 12px #0005}
+.crown{position:absolute;right:calc(var(--s)*-.075);top:24%;width:calc(var(--s)*.095);height:calc(var(--s)*.2);
+  border-radius:0 .6em .6em 0;background:repeating-linear-gradient(0deg,#9aa2b3 0 3px,#e3e7ee 3px 6px);
+  cursor:ns-resize;box-shadow:2px 2px 6px #0007}
+.sbtn{position:absolute;right:calc(var(--s)*-.05);top:50%;width:calc(var(--s)*.06);height:calc(var(--s)*.16);
+  border-radius:0 .5em .5em 0;background:linear-gradient(#cfd4de,#8a92a3);cursor:pointer}
+.glass{position:relative;width:var(--s);height:calc(var(--s)*1.2);border-radius:calc(var(--s)*.27);
+  overflow:hidden;background:#000;box-shadow:0 0 0 calc(var(--s)*.018) #05060a}
+.glass::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(120deg,#fff3 0,#fff0 28%,#fff0 70%,#fff1 100%);border-radius:inherit}
+.track{display:flex;height:100%;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.dots{position:absolute;bottom:.5em;left:0;right:0;display:flex;justify-content:center;gap:2px;z-index:3;pointer-events:none}
+.dots i{width:3px;height:3px;border-radius:50%;background:#8a93a8aa}
+.dots i.on{background:#1f6feb;width:7px;border-radius:3px}
+.shake{animation:sh .4s 3}
+@keyframes sh{25%{transform:translateX(-5px) rotate(-1deg)}75%{transform:translateX(5px) rotate(1deg)}}
+@media (prefers-reduced-motion:reduce){.shake{animation:none}.track{transition:none}}
+
+/* nav arrows */
+.nav{flex:none;width:52px;height:52px;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);font-size:28px;line-height:1;cursor:pointer;
+  margin:0 clamp(8px,3vw,40px);z-index:5}
+.nav:hover{background:#1f6feb;color:#fff}
+.nav:focus-visible{outline:2px solid #1f6feb}
+.nav:disabled{opacity:.3;cursor:default}
+.nav:disabled:hover{background:var(--panel);color:var(--ink)}
+@media (max-width:480px){.nav{width:38px;height:38px;font-size:22px;margin:0 3px}}
+
+/* menu button */
+#menu{position:fixed;top:max(12px,env(safe-area-inset-top,0px));right:12px;z-index:30;
+  width:44px;height:44px;border-radius:12px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);font-size:22px;cursor:pointer}
+
+/* ===== Refinement ===== */
+.case{background:linear-gradient(135deg,#fafbfd,#98a1b3 40%,#e6e9f0 58%,#6f788c);
+  box-shadow:inset 0 0 0 2px #fffa,inset 0 -8px 16px #0006,0 0 0 1px #0004}
+.nav{width:56px;height:56px;box-shadow:0 8px 20px -8px #000a}
+@media (max-width:480px){.nav{width:40px;height:40px}}
+.dots{bottom:.6em}
+.dots i{width:4px;height:4px}
+.dots i.on{width:9px}
+#menu{width:48px;height:48px;border-radius:14px;box-shadow:0 8px 20px -8px #000a}
+</style>
+<style>
+/* ==== css/03-screens.css ==== */
+/* ===== Screens base ===== */
+.pg{flex:none;width:var(--s);height:100%;overflow-y:auto;background:#f3f6fc;color:#13203a;
+  font-size:calc(var(--s)/20);padding:.8em .8em 1.8em;scrollbar-width:none;user-select:none}
+.pg::-webkit-scrollbar{display:none}
+.pg.red{background:#fffaf0;color:#13203a;box-shadow:inset 0 0 0 3px #d97706;overflow-y:auto;scrollbar-width:none}
+.pg.red::-webkit-scrollbar{display:none}
+.pg.protocol{overflow-y:auto;scrollbar-width:none}
+.pg.protocol::-webkit-scrollbar{display:none}
+.pg.symptoms{overflow-y:auto;scrollbar-width:none}
+.pg.symptoms::-webkit-scrollbar{display:none}
+@keyframes pulse{50%{filter:brightness(1.18)}}
+.hd{display:flex;justify-content:space-between;align-items:center;margin:.3em .2em .6em;font-size:.95em}
+.hd a{color:#1f6feb;cursor:pointer;font-size:1.3em;line-height:1}
+.hd b{flex:1;margin-left:.4em;color:#1f4fa8}
+.hd time{font-weight:700}
+.rw{display:flex;align-items:center;gap:.5em;background:#fff;border-radius:1em;padding:.55em .7em;
+  margin:.4em 0;box-shadow:0 1px 3px #1f4fa822}
+.rw b{flex:1;font-weight:600;font-size:.9em}
+.rw em{font-style:normal;font-weight:800}
+.d{width:.6em;height:.6em;border-radius:50%;background:#34c759}
+.d.s1{background:#ff9f0a}
+.d.s2{background:#e5322d}
+.card{background:#fff;border-radius:1em;padding:.7em;margin:.45em 0;font-size:.88em;line-height:1.35;box-shadow:0 1px 3px #1f4fa822}
+.card.ok{background:#d5f3df}.card.y{background:#fdebc0}.card.r{background:#fbd5d5}.card.b{background:#d8e9fb}
+.btn{display:block;width:100%;border:0;border-radius:2em;padding:.65em;margin:.5em 0;font:inherit;
+  font-weight:700;font-size:.9em;color:#fff;background:#1f6feb;cursor:pointer}
+.btn.o{background:#fff;color:#1f6feb;border:2px solid #9ec2f5}
+.btn.w{background:#fff;color:#c62828}
+.big{text-align:center;font-size:1.25em;font-weight:800;margin:.5em 0 .1em}
+.sub{text-align:center;opacity:.7;font-size:.8em}
+.tabs{display:flex;background:#e3ebf8;border-radius:2em;padding:.2em;margin:.3em 0}
+.tabs a{flex:1;text-align:center;padding:.35em 0;border-radius:2em;font-size:.8em;font-weight:700;cursor:pointer}
+.tabs a.on{background:#1f6feb;color:#fff}
+.bars{display:flex;align-items:flex-end;gap:.25em;height:3.2em;margin:.6em 0}
+.bars i{flex:1;background:#5a6ff0;border-radius:2px}
+.step{display:flex;gap:.6em;align-items:center;margin:.45em 0;font-size:.88em;font-weight:600}
+.step i{flex:none;width:1.7em;height:1.7em;border-radius:50%;background:#1f6feb;color:#fff;
+  display:grid;place-items:center;font-style:normal}
+.pg input[type=number]{width:4.4em;font:inherit;font-weight:700;border:1px solid #9ec2f5;
+  border-radius:.5em;padding:.1em .3em}
+.planet{height:6em;margin:.6em -.8em -1.8em;background:radial-gradient(circle at 30% 120%,#3f8cff 0,#1d4fa8 40%,#0a1a3d 70%);
+  border-radius:50% 50% 0 0/30% 30% 0 0}
+
+/* ===== Refinement ===== */
+.pg{font-size:calc(var(--s)/16.5);padding:.9em .95em 2.2em;
+  background:linear-gradient(180deg,#f7f9ff,#e9f0fc);letter-spacing:-.005em;line-height:1.3}
+.hd{margin:.2em 0 .85em;font-size:1em}
+.hd b{font-size:1.12em;font-weight:800;color:#14264d;letter-spacing:-.01em}
+.hd time{font-weight:800;font-variant-numeric:tabular-nums}
+.hd a{font-size:1.8em;padding-right:.2em}
+.rw{padding:.8em .9em;margin:.55em 0;border-radius:1.15em;border:1px solid #e1e9f8;box-shadow:0 8px 18px -12px #1f4fa877;gap:.7em}
+.rw span{font-size:1.35em}
+.rw b{font-size:1.05em;font-weight:700}
+.rw em{font-size:1.15em;font-weight:800;font-variant-numeric:tabular-nums}
+.d{width:.75em;height:.75em;box-shadow:0 0 0 .22em #34c75930}
+.d.s1{box-shadow:0 0 0 .22em #ff9f0a35}
+.d.s2{box-shadow:0 0 0 .22em #e5322d35}
+.card{font-size:1em;padding:.9em 1em;margin:.6em 0;border-radius:1.15em;border:1px solid #e1e9f8;
+  box-shadow:0 8px 18px -12px #1f4fa877;line-height:1.4}
+.btn{font-size:1.05em;padding:.85em;margin:.7em 0;background:linear-gradient(180deg,#3a8bff,#1458d8);
+  box-shadow:0 10px 20px -10px #1458d8}
+.btn.o{background:#fff;color:#1458d8;border:2px solid #b7d1fb;box-shadow:none}
+.btn.w{background:#fff;color:#b71c1c}
+.big{font-size:1.6em;letter-spacing:-.02em;color:#14264d;margin:.4em 0 .1em}
+.pg.red .big{color:#fff}
+.sub{font-size:.95em}
+.tabs{padding:.25em}
+.tabs a{font-size:.95em;padding:.55em 0}
+.step{font-size:1.02em;margin:.7em 0;gap:.7em}
+.step i{width:2em;height:2em}
+.pg input[type=number]{width:4.6em;font-size:1em;padding:.25em .4em}
+.pg svg[viewBox="0 0 100 100"]{width:11em!important}
+.bars{height:4em}
+
+/* ===== Single-screen layout ===== */
+.pg{font-size:calc(var(--s)/15);display:flex;flex-direction:column;gap:.45em;overflow:hidden;
+  padding:1.7em 1.2em 1.5em;line-height:1.25;background:linear-gradient(180deg,#f7f9ff,#e8effc)}
+.pg>*{flex:none;margin:0}
+.pg>.fill{flex:1 1 0;min-height:0;position:relative}
+.fill>svg{position:absolute;inset:0;width:100%;height:100%}
+.i{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hd{display:flex;align-items:center;gap:.4em;min-height:1.7em;margin:0}
+.hd a{display:grid;place-items:center;color:#1458d8;cursor:pointer;width:1.6em;height:1.6em;margin-left:-.35em;padding:0}
+.hd a .i{width:1.3em;height:1.3em;stroke-width:2.3}
+.hd b{flex:1;font-size:1.1em;font-weight:800;color:#14264d}
+.hd b.brand{display:flex;align-items:center;gap:.4em;color:#1458d8}
+.brand-logo{width:1.55em;height:1.55em;object-fit:contain}
+.hd b{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd b:not(.brand){flex:1 1 0;width:0;max-width:calc(100% - 5.2em);min-width:0;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;line-height:1.08;font-size:.72em;margin-right:.25em}
+.hd b.brand{font-size:.9em}
+.pg.red .big{font-size:1.15em;white-space:nowrap}
+.hd time{flex:none;min-width:3.4em;font-size:.95em;white-space:nowrap;text-align:right}
+.battery{display:grid;place-items:center;flex:none;width:1.25em;height:1.25em;color:#1458d8}
+.battery .i{width:1.15em;height:1.15em;stroke-width:2}
+.rw{padding:.45em .75em .45em .55em;gap:.6em;margin:0;border-radius:1.1em}
+.rw.sm{padding:.3em .7em .3em .45em}
+.rw b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.95em}
+.rw em{white-space:nowrap;font-size:1.05em}
+.rw .chip,.card .chip,.tile .chip{font-size:1em}
+.chip{width:1.9em;height:1.9em;border-radius:.65em;display:grid;place-items:center;flex:none}
+.rw.sm .chip{width:1.7em;height:1.7em}
+.chip.red{background:#fde3e3;color:#d92d2d}
+.chip.blue{background:#dcebff;color:#1560d6}
+.chip.orange{background:#ffecd2;color:#d97706}
+.chip.violet{background:#ebe3ff;color:#6d4ae0}
+.chip.indigo{background:#e1e5ff;color:#4a55d6}
+.chip.green{background:#d9f5e3;color:#1c9a4c}
+.chip.amber{background:#fff0c7;color:#b7791f}
+.chip.slate{background:#e6ecf7;color:#3a4a6b}
+.mut{color:#8a96b2}
+.pg .card{margin:0;padding:.6em .8em;font-size:.95em;line-height:1.3}
+.card.st,.card.al,.card.chk{display:flex;align-items:center;gap:.6em}
+.card.st{cursor:pointer}
+.card.st b{font-size:1.15em;display:block}
+.card.st>div,.card.al>div,.card.chk>span{flex:1;min-width:0}
+.cr{display:flex;justify-content:space-between;align-items:center;gap:.5em}
+.val{font-size:1.35em;display:block}
+.card .sub{opacity:.75}
+.pg .btn{margin:0;padding:.7em;font-size:1em;display:flex;align-items:center;justify-content:center;gap:.5em}
+.pg .big{font-size:1.5em;margin:0;text-align:center;color:#14264d}
+.pg .sub{font-size:.85em;margin:0}
+.q{font-weight:800;color:#14264d}
+.tag{font-size:.7em;text-align:center}
+.pg .tabs{margin:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.45em}
+.opt,.tile{background:#fff;border:1px solid #e1e9f8;border-radius:1.1em;cursor:pointer;
+  font-weight:700;line-height:1.1;box-shadow:0 8px 18px -12px #1f4fa877}
+.opt{padding:.8em .3em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3em;
+  min-height:3.7em;font-size:1em;text-align:center}
+.opt.on{outline:2.5px solid #1f6feb;background:#eef5ff}
+.face{width:2.2em;height:2.2em}
+.tile{display:flex;align-items:center;gap:.5em;padding:.5em;font-size:.85em;min-height:3.4em}
+.wk{flex:1 1 0;min-height:2.5em;display:flex;align-items:stretch;gap:.35em}
+.wk div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:.2em;
+  font-size:.72em;color:#5a6785;font-weight:700}
+.wk i{width:100%;border-radius:.35em;background:linear-gradient(#7d93ff,#4a55d6)}
+.sb{display:flex;align-items:flex-end;gap:.25em;height:2.4em}
+.sb i{flex:1;border-radius:.2em}
+.lg{display:flex;justify-content:center;gap:.8em;font-size:.75em;color:#44526f;font-weight:600}
+.lg i{display:inline-block;width:.7em;height:.7em;border-radius:50%;margin-right:.3em}
+.chart{width:100%;height:auto;display:block}
+.mb{display:grid;grid-template-columns:5.2em 1fr 2.4em;align-items:center;gap:.5em;font-size:.8em;margin:.2em 0}
+.tr{display:block;height:.5em;border-radius:1em;background:#e1e8f6;overflow:hidden}
+.tr>span{display:block;height:100%;background:#1f6feb}
+.ctr{display:flex;flex-direction:column;align-items:center;gap:.1em;text-align:center}
+.i.xl{width:2.6em;height:2.6em;stroke-width:1.6}
+.pg.red .sub{color:#5a6785}
+.pg.red .card.wh{background:#fff;color:#13203a}
+.pg.red .card.wh .sub{color:#5a6785}
+.pg.red .big{color:#13203a}
+.pg.red .step{color:#13203a}
+.pg.red .step i{background:#d97706;color:#fff}
+.step{font-size:.92em;gap:.6em;margin:0}
+.step i{width:1.8em;height:1.8em}
+.rw input[type=number]{width:3.9em;text-align:right;font-size:1em}
+.sw{position:relative;width:2.6em;height:1.5em;display:inline-block;flex:none}
+.sw input{opacity:0;position:absolute;inset:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+.sw i{position:absolute;inset:0;border-radius:1em;background:#c5cfe3;transition:.2s}
+.sw i::after{content:"";position:absolute;left:.15em;top:.15em;width:1.2em;height:1.2em;border-radius:50%;
+  background:#fff;transition:.2s}
+.sw input:checked+i{background:#34c759}
+.sw input:checked+i::after{left:1.25em}
+.pg .sub{text-align:left}
+.pg .sub.tag,.ctr .sub{text-align:center}
+.card.st .sub{opacity:.75}
+.comm-status{text-align:center;color:#53698f;font-size:.72em}
+.diz-scale{padding:.75em .9em!important}
+.diz-scale output{font-size:1.15em;font-weight:800;color:#1458d8}
+.diz-stepper{display:grid;grid-template-columns:2.4em 1fr 2.4em;align-items:center;gap:.55em;margin-top:.6em}
+.diz-stepper button{min-height:2.2em;border:1px solid #b7d1fb;border-radius:.7em;background:#fff;
+  color:#1458d8;font:inherit;font-size:1.15em;font-weight:800;cursor:pointer}
+.diz-stepper output{font-size:1.45em;font-weight:800;text-align:center;color:#14264d}
+</style>
+<style>
+/* ==== css/04-drawer.css ==== */
+/* ===== Control panel (☰) ===== */
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(330px,92vw);z-index:20;background:var(--panel);
+  border-left:1px solid var(--line);
+  padding:max(64px,calc(env(safe-area-inset-top,0px) + 56px)) 16px 24px;
+  overflow-y:auto;transform:translateX(105%);transition:transform .3s;font-size:13px}
+#drawer.open{transform:none}
+#drawer h4{margin:14px 0 6px;font-size:13px}
+#drawer button,#drawer select{font:inherit;color:var(--ink);background:transparent;
+  border:1px solid var(--line);border-radius:8px;padding:6px 9px;margin:2px;cursor:pointer}
+#drawer button.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+#drawer label{display:flex;align-items:center;gap:6px;margin:3px 0}
+#drawer label span{width:86px}
+#drawer input[type=range]{flex:1}
+#log{font-size:11px;line-height:1.5;max-height:150px;overflow:auto;
+  border:1px solid var(--line);border-radius:8px;padding:6px}
+#toast{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%);background:#111c;color:#fff;padding:8px 14px;border-radius:20px;
+  font-size:13px;opacity:0;transition:.3s;z-index:40;pointer-events:none}
+#toast.on{opacity:1}
+
+/* status dots for scenario buttons */
+.sd{display:inline-block;width:.6em;height:.6em;border-radius:50%;margin-right:.45em}
+.sd.g{background:#34c759}
+.sd.y{background:#ffb020}
+.sd.r{background:#e5322d}
+.sd.n{background:#8a96b2}
+
+/* ===== Refinement ===== */
+#drawer{font-size:14.5px}
+#drawer h4{font-size:14px;margin:18px 0 8px}
+#drawer button,#drawer select{padding:8px 12px;border-radius:10px}
+#drawer button.on{background:linear-gradient(180deg,#3a8bff,#1458d8)}
+#drawer label span{width:92px}
+#log{font-size:12.5px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.600-7 10-7 10z"/></symbol>
+<symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3.500s6 6.200 6 10.500a6 6 0 0 1-12 0c0-4.300 6-10.500 6-10.500z"/></symbol>
+<symbol id="i-thermo" viewBox="0 0 24 24"><path d="M10 14.500V5a2 2 0 0 1 4 0v9.500a4 4 0 1 1-4 0z"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 6 13.500h5L10 21l7-10.500h-5z"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.500A8 8 0 0 1 9.500 4a8 8 0 1 0 10.500 10.500z"/></symbol>
+<symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+<symbol id="i-fork" viewBox="0 0 24 24"><path d="M7 3v6a2 2 0 0 0 4 0V3M9 11v10M17 3v18M17 3c-2 1.500-3 4-3 7h3"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1zM6 6h12v14H6zM9 11h6M9 15h4"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20v-6M10 20V6M16 20v-9M21 20H3"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M8 15v4"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 10v10h12V10"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4 2.500 20h19zM12 10v4M12 17.500v.01"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v5M12 8v.01"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17v-6a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/></symbol>
+<symbol id="i-headset" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v5H4zM17 14h3v5h-3zM20 19a4 4 0 0 1-4 3h-3"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.500l4.500 4.500L19 7"/></symbol>
+<symbol id="i-antenna" viewBox="0 0 24 24"><path d="M5 12a7 7 0 0 1 14 0M8.500 12a3.500 3.500 0 0 1 7 0M12 12v9M9 21h6"/></symbol>
+<symbol id="i-logo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5.500" fill="currentColor" stroke="none"/><ellipse cx="12" cy="12" rx="10.500" ry="3.800" transform="rotate(-20 12 12)"/></symbol>
+<symbol id="i-battery" viewBox="0 0 24 24"><rect x="3" y="6.5" width="16" height="11" rx="2"/><path d="M21 10v4M6 9.5v5M9.5 9.5v5M13 9.5v5"/></symbol>
+</defs></svg>
+
+<div id="stage">
+  <button class="nav" id="prev" aria-label="Pantalla anterior">‹</button>
+  <div id="watch">
+    <div class="strap top"></div>
+    <div class="case">
+      <i class="crown" id="crown" title="Rueda: cambiar pantalla · clic: Inicio"></i>
+      <i class="sbtn" id="sbtn" title="Menú"></i>
+      <div class="glass" id="glass">
+        <div class="track" id="track"></div>
+        <div class="dots" id="dots"></div>
+      </div>
+    </div>
+    <div class="strap bot"></div>
+  </div>
+  <button class="nav" id="next" aria-label="Pantalla siguiente">›</button>
+</div>
+
+<button id="menu" aria-label="Abrir panel de control" aria-expanded="false">☰</button>
+<aside id="drawer" aria-label="Panel de simulación"></aside>
+<div id="toast" role="status"></div>
+
+<script>
+/* ==== js/01-config.js ==== */
+// ===== MODULE: CONFIG (single source of truth) =====
+(function(AB){
+'use strict';
+const TH={
+  hr:{lr:40,ly:45,hy:120,hr:150,u:"bpm",n:"FC"},
+  spo2:{lr:92,ly:95,u:"%",n:"SpO₂"},
+  temp:{lr:35,ly:36,hy:38,hr:39,u:"°C",n:"Temp"},
+  sbp:{lr:90,ly:100,hy:130,hr:150,u:"mmHg",n:"Presión sistólica"},
+  map:{lr:60,ly:70,hy:105,hr:130,u:"mmHg",n:"Presión media"},
+  glucose:{lr:50,ly:70,hy:200,hr:250,u:"mg/dL",n:"Glucosa"},
+  skinTemp:{lr:10,ly:15,hy:42,hr:44,u:"°C",n:"Piel"},
+  p:{lr:60,ly:70,u:"kPa",n:"Presión"},
+  co2:{hy:2500,hr:5000,u:"ppm",n:"CO₂"},
+  rad:{hy:0.5,hr:1.0,u:"mSv/h",n:"Radiación"}
+};
+const RANGE={hr:[20,220],spo2:[50,100],temp:[30,43],sbp:[50,220],map:[30,180],
+  glucose:[20,400],skinTemp:[0,50],p:[0,120],co2:[0,20000],rad:[0,100]};
+const SIGMA={hr:2,spo2:.5,temp:.1,sbp:2,map:1,glucose:2,skinTemp:.15,p:.3,co2:40,rad:.01};
+const CFG={win:5,rrWin:30,rrJitterMs:30,esc:3,deesc:5,lossCycles:3,rapidDropKpaMin:-0.5,rmssdRefMs:50,
+  w:{bio:.35,hrv:.2,sleep:.2,co2:.25},maxMit:15,
+  cr:{ex:40,sleep:30,water:20,survey:10},
+  goal:{ex:52.8,sleep:8,sleepMin:6,w0:2.5,w1:3.0},
+  space:{sbpEarth:122,sbpTarget:111,mapEarth:85,mapTarget:79,exerciseFactor:.88,
+    glucoseNormal:[70,105],basalTemp:37,skinPain:[10,44]},
+  dtMs:60000,dtEmergencyMs:10000,seed:42};
+const KEYS=["hr","spo2","temp","sbp","map","glucose","skinTemp","p","co2","rad"];
+const DOM={bio:["hr","spo2","temp","sbp","map","glucose","skinTemp"],env:["p","co2","rad"]};
+const LBL=["Normal","Atención","Crítico"];
+const MIS=["Estable","Atención","Crítica"];
+const PROTO={
+  tag:"Ilustrativo, inspirado en ISS — no sustituye procedimiento oficial",
+  y:["Reducir la carga de trabajo","Verificar scrubbers CDRA","Hidratarse",
+     "Repetir la medición en 15 min","Notificar al MCC"],
+  r:["Sentarse y detener actividad",
+     "Comprobar SpO₂, presión y glucosa",
+     "Notificar al MCC con las lecturas y síntomas",
+     "Seguir las instrucciones del flight surgeon"],
+  diz:["Sentarse y detener actividad",
+      "Comprobar SpO₂, presión y glucosa; avisar al MCC",
+      "Considerar Prometazina u Ondansetrón solo con autorización del MCC",
+      "Confirmar autorización y dosis; escanear el frasco",
+      "Contactar al MCC y al flight surgeon"],
+  fever:["Detener actividad y medir temperatura de nuevo",
+        "Hidratarse y avisar al MCC/flight surgeon",
+        "Considerar Paracetamol 325 mg solo con autorización del MCC",
+        "Evaluar posible infección; antibiótico solo por orden médica",
+        "Repetir temperatura y SpO₂ según indicación"],
+  cold:["Detener actividad y buscar aislamiento térmico",
+        "Recalentar gradualmente con prendas y compresas tibias",
+        "Controlar temperatura, SpO₂ y estado mental; avisar al MCC",
+        "No hay medicación para subir la temperatura corporal",
+        "Contactar al MCC y al flight surgeon"],
+  decomp:["Detener actividad y entrar a una zona presurizada",
+          "Usar oxígeno y traje presurizado según procedimiento",
+          "Comprobar presión de cabina y SpO₂; avisar al MCC",
+          "Seguir el procedimiento de emergencia del flight surgeon",
+          "No administrar sedantes"]
+};
+Object.assign(AB,{TH,RANGE,SIGMA,CFG,KEYS,DOM,LBL,MIS,PROTO});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/02-util.js ==== */
+// ===== MODULE: UTIL + RNG =====
+(function(AB){
+'use strict';
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const g=(v,d)=>v==null?d:v;
+const fx=(v,d=0)=>v==null?"—":v.toFixed(d);
+const clk=()=>new Date().toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"});
+function mulberry32(a){
+  return()=>{
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function gaussOf(rng){
+  const u1=Math.max(rng(),1e-12),u2=rng();
+  return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+}
+Object.assign(AB,{$,clamp,g,fx,clk,mulberry32,gaussOf});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/03-port.js ==== */
+// ===== MODULE: PORT ITelemetrySource + scenario data =====
+(function(AB){
+'use strict';
+class ITelemetrySource{
+  next(){throw new Error("not implemented");}
+  reset(seed){}
+  setScenario(id){}
+}
+const ramp=(c,a,b,n)=>a+(b-a)*Math.min(1,c/n);
+const BASE={hr:65,spo2:98,temp:37,sbp:111,map:79,glucose:90,skinTemp:33,p:101.3,co2:1200,rad:.05,sleep:8,ex:52.8,water:2.7,diz:1,head:1,fat:1};
+const E2={hr:85,spo2:93,temp:37,sbp:108,map:76,glucose:88,skinTemp:33,p:101.3,co2:3800,rad:.05,sleep:5.5,ex:25,water:1.8,diz:3,head:2,fat:4};
+const GOALS={sleep:8,ex:60,water:2.7};
+const SC={
+  E1:c=>({...BASE}),
+  E2:c=>({...E2,co2:ramp(c,2500,3800,5)}),
+  E3A:c=>({...BASE,p:ramp(c,101.3,65,6),spo2:88,hr:125,diz:5,head:2,fat:3,ex:20,sleep:6}),
+  E3B:c=>({...BASE,co2:ramp(c,1200,5500,6),spo2:88,hr:125,diz:5,head:3,fat:3,ex:20,sleep:6}),
+  E5:c=>({...BASE,hr:155,sbp:98,map:68,glucose:72,diz:5,head:5,fat:3,ex:10,sleep:6}),
+  E6:c=>({...BASE,temp:39.6,hr:92,spo2:96,head:3,fat:3,water:1.8,sleep:6}),
+  E7:c=>({...BASE,temp:34.2,hr:54,spo2:96,head:2,fat:3,water:1.8,sleep:6}),
+  E4:c=>{
+    if(c<3)return{...E2,...GOALS,co2:3800};
+    const t=c-3;
+    return{...E2,...GOALS,co2:ramp(t,3800,1200,5),spo2:ramp(t,93,98,5),hr:ramp(t,85,65,5)};
+  }
+};
+Object.assign(AB,{ITelemetrySource,ramp,BASE,E2,GOALS,SC});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/04-adapters.js ==== */
+// ===== MODULE: ADAPTERS (fake, manual, stub) =====
+(function(AB){
+'use strict';
+const {ITelemetrySource,SC,BASE,clamp,mulberry32,gaussOf,CFG,KEYS,RANGE,SIGMA}=AB;
+
+class ScenarioSimulatorAdapter extends ITelemetrySource{
+  // Test double of the real hardware: deterministic with seed, ramps + Gaussian noise
+  constructor(){super();this.noise=true;this.sc="E1";this.reset(CFG.seed);}
+  reset(seed){this.rng=mulberry32(seed);this.c=0;this.t=0;}
+  setScenario(id){this.sc=id;this.c=0;}
+  next(){
+    const v=SC[this.sc](this.c++);
+    const dt=this.sc.startsWith("E3")?CFG.dtEmergencyMs:CFG.dtMs;
+    this.t+=dt;
+    const f={...v,t:this.t,dtMs:dt};
+    for(const k of KEYS){
+      let x=v[k];
+      if(this.noise)x+=gaussOf(this.rng)*SIGMA[k];
+      f[k]=clamp(x,...RANGE[k]);
+    }
+    f.rr=60000/v.hr+(this.noise?gaussOf(this.rng)*CFG.rrJitterMs:0);
+    return f;
+  }
+}
+
+class ManualSlidersAdapter extends ITelemetrySource{
+  constructor(){super();this.m={...BASE};this.t=0;this.rng=mulberry32(CFG.seed);}
+  reset(seed){this.rng=mulberry32(seed);this.t=0;}
+  next(){
+    this.t+=CFG.dtMs;
+    const f={...this.m,t:this.t,dtMs:CFG.dtMs};
+    f.rr=60000/f.hr+gaussOf(this.rng)*CFG.rrJitterMs;
+    return f;
+  }
+}
+
+class RealDeviceAdapter extends ITelemetrySource{
+  // TODO: connect real hardware here (WebBluetooth / WebSocket) → return TelemetryFrame
+  next(){throw new Error("RealDeviceAdapter: no implementado en este prototipo");}
+}
+
+Object.assign(AB,{ScenarioSimulatorAdapter,ManualSlidersAdapter,RealDeviceAdapter});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/05-core.js ==== */
+// ===== MODULE: CORE (analytics + triage + wellness + root cause) — only knows TelemetryFrame =====
+(function(AB){
+'use strict';
+const {TH,CFG,KEYS,DOM,clamp,g}=AB;
+
+const ev=(t,v)=>{
+  if(v==null)return null;
+  if((t.hr!=null&&v>t.hr)||(t.lr!=null&&v<t.lr))return 2;
+  if((t.hy!=null&&v>t.hy)||(t.ly!=null&&v<t.ly))return 1;
+  return 0;
+};
+function stepDom(d,target,valid){
+  if(!valid)return;
+  if(target>d.s){
+    if(target===2){d.s=2;d.n=0;}
+    else if(++d.n>=CFG.esc){d.s=1;d.n=0;}
+  } else if(target<d.s){
+    if(++d.n>=CFG.deesc){d.s-=1;d.n=0;}
+  } else d.n=0;
+}
+
+function makeCore(){
+  const K={bio:{s:0,n:0},env:{s:0,n:0},loss:{bio:0,env:0},
+    win:{},rr:[],hist:[],alerts:[],prevSt:{},prevDiz:0,glob:0,ts:0,V:null};
+  KEYS.forEach(k=>K.win[k]=[]);
+
+  const mean=k=>{
+    const a=K.win[k].filter(x=>x.v!=null);
+    return a.length?a.reduce((s,x)=>s+x.v,0)/a.length:null;
+  };
+  const slope=k=>{
+    const a=K.win[k].filter(x=>x.v!=null);
+    if(a.length<3)return null;
+    const n=a.length;let sx=0,sy=0,sxy=0,sxx=0;
+    for(const q of a){
+      const x=q.t/60000;
+      sx+=x;sy+=q.v;sxy+=x*q.v;sxx+=x*x;
+    }
+    const den=n*sxx-sx*sx;
+    return den===0?null:(n*sxy-sx*sy)/den;
+  };
+
+  K.step=f=>{
+    K.ts=f.t;
+    KEYS.forEach(k=>{
+      K.win[k].push({t:f.t,v:f[k]});
+      if(K.win[k].length>CFG.win)K.win[k].shift();
+    });
+    if(f.rr!=null&&f.hr!=null){
+      K.rr.push(f.rr);
+      if(K.rr.length>CFG.rrWin)K.rr.shift();
+    }
+    const st={};
+    KEYS.forEach(k=>st[k]=ev(TH[k],f[k]));
+
+    // Triage with hysteresis + debounce, per domain
+    for(const d of ["bio","env"]){
+      const vs=DOM[d].map(k=>st[k]).filter(x=>x!=null);
+      if(!vs.length){
+        K.loss[d]++;
+        if(K.loss[d]>=CFG.lossCycles)K[d].s=Math.max(K[d].s,1);
+      } else {
+        K.loss[d]=0;
+        stepDom(K[d],Math.max(...vs),true);
+      }
+    }
+    const prev=K.glob;
+    K.glob=Math.max(K.bio.s,K.env.s);
+    if(f.diz!=null&&f.diz>=8)K.glob=2;
+    else if(f.diz!=null&&f.diz>=4)K.glob=Math.max(K.glob,1);
+
+    const sm={};
+    KEYS.forEach(k=>sm[k]=mean(k));
+    const dp=slope("p"),dc=slope("co2");
+
+    let rm=null;
+    if(K.rr.length>=3){
+      let s=0;
+      for(let i=1;i<K.rr.length;i++)s+=(K.rr[i]-K.rr[i-1])**2;
+      rm=Math.sqrt(s/(K.rr.length-1));
+    }
+
+    const sub=[];
+    if(sm.hr!=null)sub.push(clamp((sm.hr-80)/70,0,1),clamp((60-sm.hr)/20,0,1));
+    if(sm.spo2!=null)sub.push(clamp((98-sm.spo2)/10,0,1));
+    if(sm.temp!=null)sub.push(clamp(Math.abs(sm.temp-37)/2,0,1));
+
+    const Sbio=Math.max(0,...sub);
+    const Shrv=rm==null?0:clamp((CFG.rmssdRefMs-rm)/CFG.rmssdRefMs,0,1);
+    const Ssleep=clamp((CFG.goal.sleep-g(f.sleep,CFG.goal.sleep))/4,0,1);
+    const Sco2=sm.co2==null?0:clamp((sm.co2-1000)/4000,0,1);
+    const S=100*(CFG.w.bio*Sbio+CFG.w.hrv*Shrv+CFG.w.sleep*Ssleep+CFG.w.co2*Sco2);
+
+    // Wellness credits
+    const G=CFG.goal,C=CFG.cr;
+    const ex=C.ex*Math.min(1,g(f.ex,0)/G.ex);
+    const sl=g(f.sleep,0);
+    const slc=sl>=G.sleep?C.sleep:sl>=G.sleepMin?C.sleep*(sl-G.sleepMin)/(G.sleep-G.sleepMin):0;
+    const w=g(f.water,0);
+    const wc=w>=G.w0&&w<=G.w1?C.water:w<G.w0?C.water*w/G.w0:C.water*G.w1/w;
+    const sv=f.diz!=null?C.survey:0;
+    const cr=ex+slc+wc+sv;
+
+    // Mitigation: only YELLOW with purely physiological cause; NEVER changes triage state or measurements
+    const phys=K.glob===1&&K.env.s===0;
+    const mit=phys?CFG.maxMit*clamp(cr/100,0,1):0;
+
+    // Root cause
+    const diz=g(f.diz,1),head=g(f.head,1);
+    const mareoSignal=f.hr!=null&&f.hr>=120&&(
+      (f.map!=null&&f.map<70)||(f.sbp!=null&&f.sbp<100)||
+      (f.spo2!=null&&f.spo2<92)||(f.glucose!=null&&f.glucose<70));
+    const mareo={reported:diz>=4,possible:mareoSignal,severe:diz>=4&&(mareoSignal||diz>=8),
+      source:diz>=8&&mareoSignal?"Autoinforme + patrón fisiológico":
+        diz>=8?"Autoinforme severo (8–10)":
+        diz>=4&&mareoSignal?"Autoinforme + patrón fisiológico":
+        diz>=4?"Autoinforme pendiente de confirmación fisiológica":
+        mareoSignal?"Patrón fisiológico; solicitar autoinforme":"Sin evidencia suficiente"};
+    let cause={t:"Causa no determinada",c:0};
+    if(f.co2!=null&&f.co2>TH.co2.hy&&(diz>=4||head>=4)&&dc!=null&&dc>0){
+      cause={t:"Probable hipercapnia ambiental",
+        c:.4+.4*clamp((f.co2-TH.co2.hy)/2500,0,1)+.2*clamp((Math.max(diz,head)-3)/2,0,1)};
+    } else if(dp!=null&&dp<CFG.rapidDropKpaMin&&f.spo2!=null&&f.spo2<95){
+      cause={t:"Posible despresurización",c:.5+.5*clamp(-dp/5,0,1)};
+    } else if(f.rad!=null&&f.rad>TH.rad.hy&&Math.max(diz,head,g(f.fat,1))<3){
+      cause={t:"Exposición a radiación — monitorear",c:.6};
+    }
+
+    // Alerts (only on rising edges)
+    KEYS.forEach(k=>{
+      const s=st[k];
+      if(s==null)return;
+      if(s>g(K.prevSt[k],0)){
+        const t=TH[k];
+        const hi=t[s===2?"hr":"hy"]!=null&&f[k]>(t[s===2?"hr":"hy"]);
+        K.alerts.unshift({sev:s,k,name:t.n,val:f[k],
+          thr:hi?t[s===2?"hr":"hy"]:t[s===2?"lr":"ly"],hi,unit:t.u,t:f.t,cause:cause.t});
+      }
+      K.prevSt[k]=s;
+    });
+    if(f.diz!=null&&f.diz>=8&&K.prevDiz<8){
+      K.alerts.unshift({sev:2,k:"diz",name:"Mareo severo",val:f.diz,
+        thr:8,hi:true,unit:"/10",t:f.t,cause:"Autoinforme severo"});
+    }
+    K.prevDiz=f.diz==null?0:f.diz;
+    if(K.alerts.length>30)K.alerts.length=30;
+
+    K.hist.push({hr:f.hr,spo2:f.spo2,temp:f.temp});
+    if(K.hist.length>96)K.hist.shift();
+
+    K.V={f,st,sm,dp,dc,rm,Sraw:S,S:Math.max(0,S-mit),mit,Sbio,Shrv,Ssleep,Sco2,cr,cause,mareo,
+      glob:K.glob,prev,bio:K.bio.s,env:K.env.s,flex:mit>0};
+    return K.V;
+  };
+  return K;
+}
+Object.assign(AB,{ev,stepDom,makeCore});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/06-state.js ==== */
+// ===== MODULE: GLOBAL STATE (mutable refs on AB) =====
+(function(AB){
+'use strict';
+const {ScenarioSimulatorAdapter,ManualSlidersAdapter,RealDeviceAdapter,makeCore,CFG}=AB;
+const G={idx:0,tabH:0,tabA:0,sym:0,sound:true,playing:true,speed:1,
+  mode:"real",seed:CFG.seed,sc:"E1",inv:{},symOv:null,dizSeverity:1,autoContact:false,contactPending:false,
+  medConfirmed:false,medScanned:false,comm:"online",syncPending:0,syncMessage:"MCC conectado",log:[],histN:96};
+const SRC={sim:new ScenarioSimulatorAdapter(),
+  man:new ManualSlidersAdapter(),
+  real:new RealDeviceAdapter()};
+AB.G=G;
+AB.SRC=SRC;
+AB.src=SRC.sim;      // current telemetry adapter (mutable)
+AB.K=makeCore();     // current core (mutable — replaced by setScenario)
+AB.timer=null;
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/07-screens.js ==== */
+// ===== MODULE: SCREENS (17) rendered from core view-model =====
+(function(AB){
+'use strict';
+const {TH,PROTO,CFG,LBL,MIS,clk,fx,clamp,g}=AB;
+const G=AB.G; // never reassigned
+
+const I=(n,c="")=>`<svg class="i ${c}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const dot=s=>`<i class="d s${s}"></i>`;
+const H=(t,b=1)=>`<div class="hd">${b?`<a data-go="8" aria-label="Volver al menú">${I("back")}</a>`:""}<b>${t}</b><time>${clk()}</time><span class="battery" role="img" aria-label="Batería 82%" title="Batería 82%">${I("battery")}</span></div>`;
+const row=(ic,tone,l,v,s)=>`<div class="rw"><span class="chip ${tone}">${I(ic)}</span><b>${l}</b><em>${v}</em>${s==null?"":dot(s)}</div>`;
+const step=(t,i)=>`<div class="step"><i>${i+1}</i>${t}</div>`;
+const face=i=>{
+  const c=["#34c759","#ffd60a","#ff9f0a","#ff453a"][i];
+  const m=["M8 14.500q4 3.500 8 0","M8.500 15h7","M8 15q2-2 4 0t4 0","M8 16q4-3.500 8 0"][i];
+  return `<svg class="face" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.500" fill="${c}"/><circle cx="8.500" cy="10" r="1.300" fill="#13203a"/><circle cx="15.500" cy="10" r="1.300" fill="#13203a"/><path d="${m}" fill="none" stroke="#13203a" stroke-width="1.700" stroke-linecap="round"/></svg>`;
+};
+const scene=(helmet,id)=>`<svg viewBox="0 0 200 110" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><defs><radialGradient id="${id}" cx=".35" cy=".25" r=".9"><stop offset="0" stop-color="#6fb4ff"/><stop offset=".55" stop-color="#1f5fd0"/><stop offset="1" stop-color="#0b1f55"/></radialGradient></defs><g fill="#9db4e8"><circle cx="22" cy="20" r="1.300"/><circle cx="176" cy="28" r="1.500"/><circle cx="150" cy="9" r="1"/><circle cx="40" cy="62" r="1"/></g><circle cx="100" cy="${helmet?190:178}" r="${helmet?115:105}" fill="url(#${id})"/>${helmet?'<circle cx="100" cy="46" r="27" fill="#f1f4fc" stroke="#c9d4ee" stroke-width="3"/><rect x="80" y="32" width="40" height="27" rx="13.500" fill="#14264d"/><path d="M86 41q8-6 16-3" stroke="#fff" stroke-opacity=".55" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="88" y="70" width="24" height="9" rx="4" fill="#dfe6f6"/>':""}</svg>`;
+const ROBOT=`<svg viewBox="0 0 80 72" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path d="M40 6v8" stroke="#1f6feb" stroke-width="3" stroke-linecap="round"/><circle cx="40" cy="5" r="3.500" fill="#1f6feb"/><rect x="12" y="14" width="56" height="44" rx="17" fill="#fff" stroke="#b7d1fb" stroke-width="3"/><rect x="20" y="24" width="40" height="24" rx="12" fill="#14264d"/><circle cx="32" cy="36" r="4" fill="#59c8ff"/><circle cx="48" cy="36" r="4" fill="#59c8ff"/><rect x="4" y="30" width="6" height="12" rx="3" fill="#b7d1fb"/><rect x="70" y="30" width="6" height="12" rx="3" fill="#b7d1fb"/></svg>`;
+const Sl=s=>s<25?"Bajo":s<50?"Medio":"Alto";
+const ago=a=>{const m=Math.round((AB.K.ts-a.t)/60000);return m<1?"Ahora":`Hace ${m} min`;};
+const alertTxt=a=>`${a.name} ${a.hi?"alta":"baja"}: ${fx(a.val,a.k==="rad"?2:a.k==="temp"||a.k==="p"?1:0)} ${a.unit} (límite ${a.hi?">":"<"}${a.thr})`;
+function line(arr,k,mn,mx,col){
+  const a=arr.slice(-G.histN),n=Math.max(1,a.length-1);
+  return `<polyline fill="none" stroke="${col}" stroke-width="1.6" points="${a.map((h,i)=>h[k]==null?"":`${(i/n*196+2).toFixed(1)},${(86-clamp((h[k]-mn)/(mx-mn),0,1)*80).toFixed(1)}`).join(" ")}"/>`;
+}
+
+const SCREENS=[
+  V=>{
+    const h=new Date().getHours(),gr=h<12?"Buenos días":h<20?"Buenas tardes":"Buenas noches";
+    return `<div class="hd"><b class="brand"><img class="brand-logo" src="assets/Logo.png" alt="">AstroBeat</b><time>${clk()}</time><span class="battery" role="img" aria-label="Batería 82%" title="Batería 82%">${I("battery")}</span></div>
+      <div class="big">${gr}</div>
+      <div class="sub" style="text-align:center">Día 124 de misión</div>
+      <div class="card st ${["ok","y","r"][V.glob]}" data-go="1">
+        <span class="chip ${["green","amber","red"][V.glob]}">${I(V.glob?"warn":"check")}</span>
+        <div><div class="sub">Estado de salud</div><b>${LBL[V.glob]}</b></div>${I("next","mut")}
+      </div>
+      <div class="sub comm-status">${G.comm==="offline"?"MCC sin comunicación · modo autónomo":G.syncMessage}</div>
+      <div class="fill">${scene(true,"pg1")}</div>`;
+  },
+  V=>`${H("Signos vitales")}
+    ${row("heart","red","FC",fx(V.f.hr)+" bpm",V.st.hr)}
+    ${row("drop","blue","SpO₂",fx(V.f.spo2)+" %",V.st.spo2)}
+    ${row("thermo","orange","Temp.",fx(V.f.temp,1)+" °C",V.st.temp)}`,
+  V=>`${H("Presión y energía")}
+    ${row("pulse","violet","Presión sistólica",fx(V.f.sbp)+" mmHg",V.st.sbp)}
+    ${row("pulse","indigo","Presión media",fx(V.f.map)+" mmHg",V.st.map)}
+    ${row("drop","green","Glucosa",fx(V.f.glucose)+" mg/dL",V.st.glucose)}
+    ${row("thermo","orange","Temp. piel",fx(V.f.skinTemp,1)+" °C",V.st.skinTemp)}
+    <button class="btn o" data-go="1">Volver a signos principales</button>`,
+  V=>`${H("Síntomas")}
+    <div class="q">¿Cómo te sientes hoy?</div>
+    <div class="grid2">${["Bien","Cansancio leve","Mareos","Dolor de cabeza"].map((t,i)=>`<div class="opt ${G.sym===i?"on":""}" data-act="sym" data-i="${i}">${face(i)}${t}</div>`).join("")}</div>
+    ${G.sym===2?`<div class="card diz-scale"><div class="cr"><b>Intensidad del mareo</b></div><div class="diz-stepper" role="group" aria-label="Intensidad del mareo de 1 a 10"><button type="button" data-act="diz" data-delta="-1" aria-label="Disminuir intensidad">−</button><output data-diz-output aria-live="polite">${G.dizSeverity||1}/10</output><button type="button" data-act="diz" data-delta="1" aria-label="Aumentar intensidad">+</button></div></div>`:""}
+    <div class="fill"></div>
+    <button class="btn" data-act="save">Guardar</button>`,
+  V=>`${H("Actividad")}
+    ${row("pulse","green","Ejercicio",fx(V.f.ex)+" min",V.f.ex>=CFG.goal.ex?0:1)}
+    ${row("fork","amber","Comidas","Completas")}
+    ${row("drop","blue","Hidratación",fx(V.f.water,1)+" L",V.f.water>=2.5?0:1)}
+    <div class="wk">${[["L",35],["M",60],["X",85],["J",45],["V",30],["S",50],["D",70]].map(([d,h])=>`<div><i style="height:${h}%"></i>${d}</div>`).join("")}</div>
+    <div class="card cr">Créditos de bienestar<b>${fx(V.cr)} / 100</b></div>`,
+  V=>{
+    const p=clamp(g(V.f.sleep,0)/8,0,1)*251;
+    const q=V.f.sleep>=7?"Buena":V.f.sleep>=6?"Regular":"Baja";
+    const cl=["#4a55d6","#8aa0ff","#b79cff"];
+    return `${H("Sueño")}
+      <div class="fill"><svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#dfe5f8" stroke-width="9"/>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#6d4ae0" stroke-width="9" stroke-linecap="round"
+          stroke-dasharray="${p} 251" transform="rotate(-90 50 50)"/>
+        <text x="50" y="53" text-anchor="middle" font-size="19" font-weight="800" fill="#13203a">${fx(V.f.sleep,1)} h</text>
+        <text x="50" y="67" text-anchor="middle" font-size="8" fill="#5a6785">de 8 h</text>
+      </svg></div>
+      <div class="card cr">Calidad<b>${q}</b></div>
+      <div class="sb">${[60,30,50,25,70,35,80,40,65,30,55,85].map((h,i)=>`<i style="height:${h}%;background:${cl[i%3]}"></i>`).join("")}</div>
+      <div class="lg"><span><i style="background:${cl[0]}"></i>Profundo</span><span><i style="background:${cl[1]}"></i>Ligero</span><span><i style="background:${cl[2]}"></i>REM</span></div>`;
+  },
+  V=>{
+    const a=AB.K.alerts[0];
+    return `${H("Alertas")}${a?`<div class="card ${a.sev===2?"r":"y"} al">
+        <span class="chip ${a.sev===2?"red":"amber"}">${I("warn")}</span>
+        <div><b>${a.name} fuera de rango</b><div class="sub">${alertTxt(a)}</div></div>
+      </div>
+      <div class="card b"><b>¿Qué hacer?</b><div class="sub">${a.sev===2?"Sigue el protocolo de emergencia.":"Verifica las condiciones de medición y repite la medición."}</div></div>
+      <div class="fill"></div>
+      <button class="btn o" data-go="11">Ver detalles</button>`
+      :`<div class="card ok al"><span class="chip green">${I("check")}</span>
+        <div><b>Sin alertas activas</b><div class="sub">Todos los parámetros están en rango.</div></div>
+      </div><div class="fill"></div>`}`;
+  },
+  V=>`${H("Recomendaciones")}
+    <div class="fill">${ROBOT}</div>
+    <div class="card b" style="text-align:center">${V.glob===0?"Mantén una buena hidratación y descansa lo suficiente para tu misión.":V.flex?"Descansa y respira profundo: el descanso flexible puede reducir tu estrés fisiológico.":V.cause.t+"."}</div>
+    <button class="btn o" data-go="14">Ver más consejos</button>`,
+  V=>`${H("Menú",0)}
+    <div class="grid2">${[["home","slate","Inicio",0],["heart","red","Signos vitales",1],["clip","blue","Síntomas",3],["pulse","green","Actividad",4],["chart","violet","Historial",9],["bell","amber","Alertas",11],["sliders","slate","Configuración",15],["globe","indigo","Estado de misión",16]].map(([i,t,l,n])=>`<div class="tile" data-go="${n}"><span class="chip ${t}">${I(i)}</span>${l}</div>`).join("")}</div>`,
+  V=>`${H("Historial")}
+    <div class="tabs">${["24 h","7 días","30 días"].map((t,i)=>`<a data-act="tabH" data-i="${i}" class="${G.tabH===i?"on":""}">${t}</a>`).join("")}</div>
+    <svg class="chart" viewBox="0 0 200 96" aria-hidden="true">
+      <rect width="200" height="96" rx="8" fill="#fff"/>
+      ${[24,48,72].map(y=>`<path d="M0 ${y}H200" stroke="#e6ecf7"/>`).join("")}
+      ${line(AB.K.hist,"hr",40,160,"#e5322d")}
+      ${line(AB.K.hist,"spo2",85,100,"#1f6feb")}
+      ${line(AB.K.hist,"temp",35,40,"#ff9f0a")}
+    </svg>
+    <div class="lg"><span><i style="background:#e5322d"></i>FC</span><span><i style="background:#1f6feb"></i>SpO₂</span><span><i style="background:#ff9f0a"></i>Temp.</span></div>
+    <div class="fill"></div>`,
+  V=>`${H("Detalle de registro")}
+    <div class="sub">${new Date().toLocaleDateString("es",{day:"numeric",month:"short",year:"numeric"})} · ${clk()}</div>
+    ${row("heart","red","FC",fx(V.f.hr)+" bpm",V.st.hr)}
+    ${row("drop","blue","SpO₂",fx(V.f.spo2)+" %",V.st.spo2)}
+    ${row("thermo","orange","Temp.",fx(V.f.temp,1)+" °C",V.st.temp)}
+    <div class="card"><div class="sub">Notas</div>${V.glob?V.cause.t:"Sin anomalías"}</div>
+    <div class="fill"></div>
+    <button class="btn o" data-act="note">Agregar nota</button>`,
+  V=>{
+    const L=AB.K.alerts.filter(a=>G.tabA===0||(G.tabA===1?a.sev===2:a.sev===1));
+    return `${H("Alertas")}
+      <div class="tabs">${["Todos","Críticas","Avisos"].map((t,i)=>`<a data-act="tabA" data-i="${i}" class="${G.tabA===i?"on":""}">${t}</a>`).join("")}</div>
+      ${L.slice(0,3).map(a=>`<div class="card ${a.sev===2?"r":"y"} al">
+        <span class="chip ${a.sev===2?"red":"amber"}">${I(a.sev===2?"warn":"info")}</span>
+        <div><b>${a.name}</b> <span class="sub">${ago(a)}</span><div class="sub">${alertTxt(a)}</div></div>
+      </div>`).join("")||'<div class="card">Sin alertas en esta categoría.</div>'}
+      <div class="fill"></div>
+      <button class="btn o" data-act="clear">Limpiar historial</button>`;
+  },
+  V=>{
+    const fever=V.f.temp!=null&&V.f.temp>=TH.temp.hr;
+    const cold=V.f.temp!=null&&V.f.temp<=TH.temp.lr;
+    const decomp=V.cause.t==="Posible despresurización"||
+      (V.f.p!=null&&V.f.p<TH.p.ly&&V.f.spo2!=null&&V.f.spo2<95);
+    const diz=V.mareo.severe&&!decomp;
+    const a=AB.K.alerts.find(x=>x.sev===2)||(
+      V.mareo.severe?{name:"Mareo severo",val:V.f.diz,unit:"/10",k:"diz",sev:2,hi:true,thr:8}:null);
+    const kind=decomp?"Despresurización":diz?"Mareo severo":fever?"Fiebre crítica":cold?"Hipotermia crítica":"Emergencia médica";
+    const value=decomp?`Cabina ${fx(V.f.p,1)} kPa · SpO₂ ${fx(V.f.spo2)} %`:diz?`${fx(V.f.diz)}/10`:fever||cold?`${fx(V.f.temp,1)} °C`:a?`${fx(a.val,a.k==="temp"||a.k==="p"?1:a.k==="rad"?2:0)} ${a.unit}`:"";
+    return (V.glob===2&&a||V.mareo.severe||fever||cold||decomp)?`
+      <div class="ctr">${I(decomp?"antenna":diz?"warn":fever||cold?"thermo":"warn","xl")}<div class="big">${kind}</div><div class="sub">${value}</div></div>
+      ${G.autoContact?`<div class="card b"><b>${G.comm==="offline"?"Evento guardado localmente":"MCC contactado automáticamente"}</b><div class="sub">${G.comm==="offline"?"Sin enlace: contacto en cola hasta sincronizar.":"Alerta de mareo 9–10 enviada."}</div></div>`:""}
+      ${decomp?step("Detener actividad y entrar a una zona presurizada",0):""}
+      ${diz?step("Sentarse y detener toda actividad",0):""}
+      ${fever?step("Aislarse de la actividad y repetir temperatura",0):""}
+      ${cold?step("Comprobar SpO₂ y estado mental; avisar al MCC",0):""}
+      ${decomp?step("Usar oxígeno y traje presurizado según procedimiento",1):diz?step("Comprobar SpO₂, presión y glucosa",1):fever?step("Comprobar SpO₂ e hidratarse; avisar al MCC",1):cold?step("Recalentar gradualmente con prendas y compresas tibias",1):""}
+      ${decomp?`<div class="card wh"><b>Respuesta a pérdida de presión</b><div class="sub">Comprobar presión de cabina y SpO₂; seguir instrucciones del MCC. No administrar sedantes.</div></div>`:""}
+      ${diz||fever?`<div class="card wh"><b>${diz?"Medicación para mareo":"Control de fiebre"}</b><div class="sub">${diz?`${V.mareo.source} · Prometazina u Ondansetrón · Botiquín médico`:"Posible infección · Paracetamol 325 mg; antibiótico solo por orden médica"}</div>
+        ${G.medConfirmed?`<div class="sub">Autorización y dosis confirmadas</div>`:`<button class="btn o" data-act="confirmDose">Confirmar autorización y dosis</button>`}
+        ${G.medConfirmed?`<button class="btn o" data-act="scanMed">${G.medScanned?"Frasco escaneado":"Escanear código del frasco"}</button>`:""}</div>`:""}
+      ${cold?`<div class="card wh"><b>Soporte térmico</b><div class="sub">No hay medicación para subir la temperatura corporal. Seguir las instrucciones del MCC.</div></div>`:""}
+      <div class="fill"></div>
+      <button class="btn w" data-act="call">${I("antenna")}Contactar Tierra</button>`
+      :`${H("Emergencia")}
+      <div class="card ok al"><span class="chip green">${I("check")}</span><div><b>Sin emergencia activa</b><div class="sub">Si el estado pasa a crítico, esta pantalla se abre sola.</div></div></div>
+      <div class="fill"></div>`;
+  },
+  V=>{
+    const fever=V.f.temp!=null&&V.f.temp>=TH.temp.hr;
+    const cold=V.f.temp!=null&&V.f.temp<=TH.temp.lr;
+    const decomp=V.cause.t==="Posible despresurización"||
+      (V.f.p!=null&&V.f.p<TH.p.ly&&V.f.spo2!=null&&V.f.spo2<95);
+    const L=decomp?PROTO.decomp:V.mareo.severe?PROTO.diz:fever?PROTO.fever:cold?PROTO.cold:V.glob===2?PROTO.r:PROTO.y;
+    return `${H("Protocolo")}${L.map(step).join("")}
+      <div class="fill"></div>
+      <div class="sub tag">${PROTO.tag}</div>
+      <button class="btn" data-act="call">${I("headset")}Llamar a Tierra</button>`;
+  },
+  V=>`${H("Recomendaciones")}
+    <div class="card b"><b>${V.cause.t}</b><div class="sub">Confianza ${fx(V.cause.c,2)}</div></div>
+    <div class="card">
+      <div class="cr" style="margin-bottom:.3em">Índice de estrés<b>${fx(V.S,1)}</b></div>
+      ${[["Fisiología",V.Sbio],["Variabilidad",V.Shrv],["Sueño",V.Ssleep],["CO₂",V.Sco2]].map(([l,x])=>`<div class="mb"><span>${l}</span><span class="tr"><span style="width:${Math.round(x*100)}%"></span></span><span>${fx(x,2)}</span></div>`).join("")}
+      ${V.flex?`<div class="sub">Mitigado −${fx(V.mit,1)} por bienestar</div>`:""}
+    </div>
+    <div class="fill"></div>
+    <div class="card ok chk">${I("check")}<span>Descansa y respira profundo. Repite la medición en 5 min.</span></div>`,
+  V=>`${H("Configuración")}
+    <div class="card al"><span class="chip blue">${I("sliders")}</span><div><b>Umbrales clínicos protegidos</b><div class="sub">El MCC administra estos límites para evitar cambios accidentales.</div></div></div>
+    <div class="rw sm"><span class="chip slate">${I("bell")}</span><b>Alertas sonoras</b><label class="sw"><input type="checkbox" data-act="snd" aria-label="Alertas sonoras" ${G.sound?"checked":""}><i></i></label></div>
+    <div class="fill"></div>
+    <div class="sub tag">Prototipo educativo; no es un dispositivo médico ni sustituye criterio clínico.</div>`,
+  V=>`${H("Estado de misión")}
+    <div class="card al"><span class="chip blue">${I("globe")}</span><div><b>Misión activa</b><div class="sub">Día 124 de misión</div></div>${dot(0)}</div>
+    <div class="card ${["ok","y","r"][V.glob]}"><div class="sub">Salud del astronauta</div><b class="val">${MIS[V.glob]}</b></div>
+    <div class="card"><div class="cr">Última actualización<b>${clk()}</b></div><div class="cr" style="margin-top:.3em">Créditos de bienestar<b>${fx(V.cr)}</b></div></div>
+    <div class="fill">${scene(false,"pg2")}</div>`
+];
+
+Object.assign(AB,{SCREENS,line,H,row,dot,step,face,scene,ROBOT,I,Sl,ago,alertTxt});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/08-ui.js ==== */
+// ===== MODULE: RENDER + NAVIGATION + TOAST/BEEP =====
+(function(AB){
+'use strict';
+const {$}=AB;
+const track=$("#track"),glass=$("#glass");
+const G=AB.G;
+
+function fit(pg){
+  const emergency=pg.classList.contains("red");
+  const protocol=pg.classList.contains("protocol");
+  const symptoms=pg.classList.contains("symptoms");
+  let b=emergency?pg.clientWidth/13.5:pg.clientWidth/15;
+  pg.style.fontSize=b+"px";
+  if(emergency||protocol||symptoms)return;
+  for(let k=0;k<8&&pg.scrollHeight>pg.clientHeight+1;k++){
+    b*=pg.clientHeight/pg.scrollHeight*.985;
+    pg.style.fontSize=b+"px";
+  }
+}
+let pressed=false,pending=false,raf=0;
+function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;render();});}
+function render(force){
+  const V=AB.K.V;if(!V)return;
+  const ae=document.activeElement;
+  if(!force&&(pressed||(ae&&/INPUT/.test(ae.tagName)&&ae.closest(".pg")))){pending=true;return;}
+  pending=false;
+  const old=[...track.children].map(p=>p.scrollTop);
+  const act=document.activeElement;
+  const hold=act&&act.closest&&act.closest(".pg");
+  if(track.children.length!==AB.SCREENS.length){
+    track.innerHTML=AB.SCREENS.map((_,i)=>`<section class="pg" aria-label="Pantalla ${i+1}"></section>`).join("");
+  }
+  AB.SCREENS.forEach((f,i)=>{
+    const pg=track.children[i];
+    const h=Math.abs(i-G.idx)<=1?f(V):"";
+    const cls=`pg${i===12&&V.glob===2?" red":""}${i===3?" symptoms":""}${i===13?" protocol":""}`;
+    if(pg.className!==cls)pg.className=cls;
+    if(pg._h!==h){pg._h=h;pg.innerHTML=h;fit(pg);}
+  });
+  [...track.children].forEach((p,i)=>p.scrollTop=old[i]||0);
+  $("#dots").innerHTML=AB.SCREENS.map((_,i)=>`<i class="${i===G.idx?"on":""}"></i>`).join("");
+}
+function go(n){
+  const N=AB.SCREENS.length,to=((n%N)+N)%N,far=Math.abs(to-G.idx)>1;
+  G.idx=to;
+  if(far)track.style.transition="none";
+  track.style.transform=`translateX(calc(${-G.idx} * var(--s)))`;
+  if(far){void track.offsetWidth;track.style.transition="";}
+  render(true);
+  $("#dots").innerHTML=AB.SCREENS.map((_,i)=>`<i class="${i===G.idx?"on":""}"></i>`).join("");
+}
+function toast(t){
+  const e=$("#toast");
+  e.textContent=t;e.classList.add("on");
+  clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove("on"),2200);
+}
+function beep(){
+  if(!G.sound)return;
+  try{
+    const a=new (window.AudioContext||window.webkitAudioContext)();
+    const o=a.createOscillator(),v=a.createGain();
+    o.frequency.value=880;v.gain.value=.08;
+    o.connect(v);v.connect(a.destination);
+    o.start();o.stop(a.currentTime+.25);
+  }catch(e){}
+}
+function logE(t){
+  G.log.unshift(`${AB.clk()} ${t}`);
+  G.log.length=Math.min(G.log.length,40);
+  if(G.comm==="offline")G.syncPending++;
+  const l=$("#log");
+  if(l)l.innerHTML=G.log.map(x=>`<div>${x}</div>`).join("");
+}
+
+// Click delegation for screen buttons
+track.addEventListener("click",e=>{
+  const t=e.target.closest("[data-go],[data-act]");
+  if(!t)return;
+  if(t.dataset.go!=null)return go(+t.dataset.go);
+  const a=t.dataset.act,i=+t.dataset.i;
+  if(a==="sym"){G.sym=i;render(true);}
+  else if(a==="diz"){
+    G.dizSeverity=Math.min(10,Math.max(1,G.dizSeverity+(+t.dataset.delta||0)));
+    const out=track.querySelector("[data-diz-output]");
+    if(out)out.textContent=`${G.dizSeverity}/10`;
+  }
+  else if(a==="save"){
+    const severity=G.sym===2?G.dizSeverity||1:1;
+    G.dizSeverity=severity;
+    G.symOv=[{diz:1,head:1,fat:1},{diz:1,head:1,fat:3},{diz:severity,head:1,fat:2},{diz:1,head:4,fat:2}][G.sym];
+    G.autoContact=G.sym===2&&severity>=9;
+    if(G.sym===2&&severity>=8){
+      AB.tick();
+      AB.go(12);
+      AB.beep();
+      if(G.autoContact){
+        G.contactPending=G.comm==="offline";
+        logE(G.comm==="offline"?"Mareo 9–10: evento local guardado; contacto en cola":"Mareo 9–10: contacto automático con el MCC iniciado");
+        toast(G.comm==="offline"?"MCC sin comunicación; contacto en cola":"Mareo severo: contacto automático con Tierra");
+      } else {
+        logE("Mareo 8: alerta activada; confirmar con sensores");
+        toast("Alerta de mareo activada");
+      }
+    } else toast("Síntomas guardados");
+  }
+  else if(a==="tabH"){G.tabH=i;G.histN=[24,48,96][i];render(true);}
+  else if(a==="tabA"){G.tabA=i;render(true);}
+  else if(a==="clear"){AB.K.alerts.length=0;render(true);toast("Historial de alertas limpio");}
+  else if(a==="note")toast("Nota agregada al registro");
+  else if(a==="confirmDose"){
+    if(t.type==="range"&&+t.value<100)return;
+    G.medConfirmed=true;
+    logE("Autorización y dosis confirmadas; requiere escaneo");
+    render(true);
+  }
+  else if(a==="scanMed"){
+    if(!G.medConfirmed)return toast("Confirma la dosis antes de escanear");
+    G.medScanned=true;
+    logE("Código del frasco escaneado (simulado)");
+    toast("Frasco verificado; esperar autorización del MCC");
+    render(true);
+  }
+  else if(a==="call"){
+    if(G.comm==="offline"){
+      G.contactPending=true;
+      logE("Solicitud de contacto guardada localmente; esperando enlace MCC");
+      return toast("MCC sin comunicación; solicitud guardada");
+    }
+    toast("Enlace con Tierra… retardo simulado 1,3 s");
+    setTimeout(()=>toast("Conectado con el MCC (simulado)"),1400);
+  }
+  else if(a==="snd"){
+    G.sound=t.checked;
+    toast(t.checked?"Alertas sonoras activadas":"Alertas sonoras desactivadas");
+  }
+});
+
+// Press tracking (pauses render while user interacts)
+track.addEventListener("pointerdown",()=>{pressed=true;});
+const release=()=>{pressed=false;if(pending)setTimeout(schedule,0);};
+window.addEventListener("pointerup",release);
+window.addEventListener("pointercancel",release);
+
+// Keyboard
+window.addEventListener("keydown",e=>{
+  if(/INPUT|SELECT/.test(e.target.tagName))return;
+  if(e.key==="ArrowRight")go(G.idx+1);
+  if(e.key==="ArrowLeft")go(G.idx-1);
+});
+
+// Crown (wheel + click)
+let wt=0;
+$("#crown").addEventListener("wheel",e=>{
+  e.preventDefault();
+  const n=Date.now();if(n-wt<220)return;wt=n;
+  go(G.idx+(e.deltaY>0?1:-1));
+},{passive:false});
+$("#crown").addEventListener("click",()=>go(0));
+
+// Prev / next / side button
+$("#prev").addEventListener("click",()=>go(G.idx-1));
+$("#next").addEventListener("click",()=>go(G.idx+1));
+$("#sbtn").addEventListener("click",()=>go(7));
+
+// Refit on resize / font load
+const refit=()=>{[...track.children].forEach(q=>q._h=null);render(true);};
+window.addEventListener("resize",refit);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(refit);
+
+Object.assign(AB,{render,go,toast,beep,logE,schedule,fit,track,glass});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/09-drawer.js ==== */
+// ===== MODULE: DRAWER (☰) =====
+(function(AB){
+'use strict';
+const {$}=AB;
+const G=AB.G,SRC=AB.SRC;
+const SLD=[
+  ["hr","FC",20,220,1],["spo2","SpO₂",50,100,1],["temp","Temp",30,43,.1],
+  ["sbp","SBP",50,220,1],["map","MAP",30,180,1],["glucose","Glucosa",20,400,1],["skinTemp","Piel",0,50,.1],
+  ["p","Presión",0,120,.5],["co2","CO₂",0,20000,50],["rad","Rad.",0,5,.05],
+  ["sleep","Sueño h",0,10,.5],["ex","Ejercicio",0,120,5],["water","Agua L",0,4,.1],
+  ["diz","Mareo",1,5,1],["head","Cefalea",1,5,1],["fat","Fatiga",1,5,1]
+];
+
+function buildDrawer(){
+  const d=$("#drawer");
+  d.innerHTML=
+    `<h4>Escenario</h4>${[
+      ["E1",'<i class="sd g"></i>E1 Nominal'],
+      ["E2",'<i class="sd y"></i>E2 Fatiga/CO₂'],
+      ["E3A",'<i class="sd r"></i>E3A Despresurización'],
+      ["E3B",'<i class="sd r"></i>E3B CO₂ crítico'],
+      ["E5",'<i class="sd r"></i>E5 Mareo severo'],
+      ["E6",'<i class="sd r"></i>E6 Fiebre crítica'],
+      ["E7",'<i class="sd r"></i>E7 Hipotermia crítica'],
+      ["E4",'<i class="sd y"></i>E4 Recuperación'],
+      ["M",'<i class="sd n"></i>Manual']
+    ].map(([i,t])=>`<button data-sc="${i}" class="${G.sc===i?"on":""}">${t}</button>`).join("")}
+    <h4>Reproducción</h4>
+    <button data-p="pp">${G.playing?"Pausa":"Reproducir"}</button>
+    ${[1,5,20].map(s=>`<button data-sp="${s}" class="${G.speed===s?"on":""}">${s}×</button>`).join("")}
+    <button data-p="step">Paso</button>
+    <h4>Modo y semilla</h4>
+    <button data-m="real" class="${G.mode==="real"?"on":""}">Realista</button>
+    <button data-m="demo" class="${G.mode==="demo"?"on":""}">Demo</button>
+    Semilla <input id="seed" type="number" value="${G.seed}" style="width:64px">
+    <button data-p="reset">Reiniciar</button>
+    <h4>Enlace MCC</h4>
+    <button data-comm="toggle" class="${G.comm==="online"?"on":""}">${G.comm==="online"?"MCC conectado":"Simular reconexión MCC"}</button>
+    <div style="font-size:11px;opacity:.75">${G.comm==="offline"?"Modo autónomo · eventos locales: "+G.syncPending:G.syncMessage}</div>
+    <h4>Sensor inválido</h4>
+    ${AB.KEYS.map(k=>`<button data-inv="${k}" class="${G.inv[k]?"on":""}">${AB.TH[k].n}</button>`).join("")}
+    ${G.sc==="M"?`<h4>Sliders manuales</h4>${SLD.map(([k,l,a,b,s])=>`<label><span>${l}</span><input type="range" min="${a}" max="${b}" step="${s}" value="${SRC.man.m[k]}" data-sl="${k}"></label>`).join("")}`:""}
+    <h4>Eventos</h4><div id="log">${G.log.map(x=>`<div>${x}</div>`).join("")}</div>
+    <p style="margin-top:12px;font-size:11px;opacity:.7">Prototipo educativo; no es un dispositivo médico ni sustituye criterio clínico.</p>`;
+}
+
+$("#drawer").addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  const D=t.dataset;
+  if(D.sc)return AB.setScenario(D.sc);
+  if(D.sp){G.speed=+D.sp;AB.restart();buildDrawer();}
+  else if(D.p==="pp"){G.playing=!G.playing;AB.restart();buildDrawer();}
+  else if(D.p==="step")AB.tick();
+  else if(D.p==="reset"){
+    G.seed=parseInt($("#seed").value,10)||AB.CFG.seed;
+    SRC.sim.reset(G.seed);SRC.man.reset(G.seed);
+    AB.setScenario(G.sc);
+  }
+  else if(D.m){G.mode=D.m;SRC.sim.noise=D.m==="real";buildDrawer();}
+  else if(D.inv){G.inv[D.inv]=!G.inv[D.inv];buildDrawer();}
+  else if(D.comm){
+    if(G.comm==="online"){
+      G.comm="offline";
+      G.syncMessage="MCC sin comunicación";
+      toast("MCC desconectado; modo autónomo activo");
+    } else {
+      const hadPending=G.syncPending>0;
+      G.comm="online";
+      G.syncMessage=hadPending?"Datos sincronizados":"MCC conectado";
+      G.syncPending=0;
+      G.contactPending=false;
+      toast(hadPending?"Datos sincronizados con el MCC":"MCC conectado");
+    }
+    buildDrawer();
+    AB.render(true);
+  }
+});
+$("#drawer").addEventListener("input",e=>{
+  const k=e.target.dataset.sl;
+  if(k)SRC.man.m[k]=parseFloat(e.target.value);
+});
+
+// Menu toggle + click-outside
+$("#menu").addEventListener("click",()=>{
+  const o=$("#drawer").classList.toggle("open");
+  $("#menu").setAttribute("aria-expanded",o);
+});
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#drawer,#menu"))$("#drawer").classList.remove("open");
+});
+
+Object.assign(AB,{buildDrawer});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/10-loop.js ==== */
+// ===== MODULE: SIMULATION LOOP + SCENARIO SWITCH =====
+(function(AB){
+'use strict';
+const {$}=AB;
+const G=AB.G,SRC=AB.SRC;
+
+function tick(){
+  let f;
+  try{f=AB.src.next();}
+  catch(e){AB.logE(e.message);return;}
+  for(const k of AB.KEYS)if(G.inv[k])f[k]=null;
+  if(G.symOv&&AB.src===SRC.sim)Object.assign(f,G.symOv);
+  const V=AB.K.step(f);
+  if(V.glob>V.prev){
+    AB.logE(`Estado → ${AB.LBL[V.glob]} · ${V.cause.t}`);
+    AB.beep();
+    if(V.glob===2){
+      AB.go(12);
+      $("#watch").classList.remove("shake");
+      void $("#watch").offsetWidth;
+      $("#watch").classList.add("shake");
+    }
+  } else if(V.glob<V.prev){
+    AB.logE(`Estado → ${AB.LBL[V.glob]}${G.sc==="E4"&&V.glob===0?" · EVENT_RECOVERY":""}`);
+  }
+  AB.schedule();
+}
+function restart(){
+  clearInterval(AB.timer);
+  if(G.playing)AB.timer=setInterval(tick,1000/G.speed);
+}
+function setScenario(id){
+  const last=AB.K.V&&AB.K.V.f;
+  G.sc=id;G.symOv=null;G.dizSeverity=1;G.autoContact=false;G.contactPending=false;G.medConfirmed=false;G.medScanned=false;
+  AB.K=AB.makeCore();
+  if(id==="M"){
+    const l=last;
+    AB.src=SRC.man;
+    SRC.man.m={...AB.BASE,...(l?{hr:l.hr,spo2:l.spo2,temp:l.temp,p:l.p,co2:l.co2,rad:l.rad}:{})};
+  } else {
+    AB.src=SRC.sim;
+    SRC.sim.setScenario(id);
+  }
+  AB.logE(`Escenario ${id}`);
+  AB.buildDrawer();
+  tick();
+  restart();
+}
+Object.assign(AB,{tick,restart,setScenario});
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/11-selftest.js ==== */
+// ===== MODULE: SELFTEST (?selftest=1) =====
+(function(AB){
+'use strict';
+if(!location.search.includes("selftest"))return;
+
+// TS_S1: E3A must reach RED in ≤6 cycles
+const s=new AB.ScenarioSimulatorAdapter();s.noise=false;s.setScenario("E3A");
+const k=AB.makeCore();
+let r;
+for(let i=0;i<8;i++)r=k.step(s.next());
+console.assert(r.glob===2,"TS_S1: E3A debe ser RED");
+
+// TS_S2: no mitigation during RED
+console.assert(r.mit===0,"TS_S2: sin mitigación en RED");
+
+// TS_S3: reported stress never below raw minus cap
+console.assert(r.S>=r.Sraw-AB.CFG.maxMit,"TS_S3: bounded mitigation");
+
+// TS_S4: E1 must stay GREEN
+const s2=new AB.ScenarioSimulatorAdapter();s2.noise=false;s2.setScenario("E1");
+const k2=AB.makeCore();
+let r2;
+for(let i=0;i<5;i++)r2=k2.step(s2.next());
+console.assert(r2.glob===0,"TS_S4: E1 debe ser GREEN");
+
+// TS_S5: E2 must reach YELLOW in ≤5 cycles
+const s3=new AB.ScenarioSimulatorAdapter();s3.noise=false;s3.setScenario("E2");
+const k3=AB.makeCore();
+let r3;
+for(let i=0;i<5;i++)r3=k3.step(s3.next());
+console.assert(r3.glob===1,"TS_S5: E2 debe ser YELLOW");
+
+// TS_S6: determinism (same seed → same sequence)
+const A=new AB.ScenarioSimulatorAdapter();A.reset(42);A.setScenario("E2");
+const B=new AB.ScenarioSimulatorAdapter();B.reset(42);B.setScenario("E2");
+for(let i=0;i<10;i++){
+  const a=A.next(),b=B.next();
+  console.assert(a.hr===b.hr&&a.co2===b.co2,`TS_S6: determinismo ciclo ${i}`);
+}
+
+console.log("AstroBeat selftest OK · TS_S1..TS_S6");
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+<script>
+/* ==== js/12-main.js ==== */
+// ===== MODULE: BOOTSTRAP =====
+(function(AB){
+'use strict';
+AB.buildDrawer();
+AB.go(0);
+AB.tick();
+AB.restart();
+})(window.AstroBeat=window.AstroBeat||{});
+</script>
+</body>
+</html>
