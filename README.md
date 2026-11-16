@@ -1,10 +1,10 @@
-# AstroBeat
+# Astro Beat
 
 ## Astronaut Health Monitoring System
 
 [🚀 Try the live prototype](https://monsserratt.github.io/Astro_Beat/)
 
-AstroBeat is a prototype developed for the **NASA Space Apps Challenge 2026** under the challenge:
+Astro Beat is a prototype developed for the **NASA Space Apps Challenge 2026** under the challenge:
 
 > **Create Health Monitoring Software for Astronauts on Space Missions**
 
@@ -25,7 +25,7 @@ In an emergency, waiting for instructions from Mission Control takes too long. A
 
 ## Our Solution
 
-AstroBeat cross-references physiological and environmental data to:
+Astro Beat cross-references physiological and environmental data to:
 
 * Detect health anomalies.
 * Identify critical situations requiring immediate attention.
@@ -35,7 +35,7 @@ AstroBeat cross-references physiological and environmental data to:
 * Operate fully offline during communication blackouts.
 * Log events for synchronization once connectivity is restored.
 
-AstroBeat serves as a decision-support tool during the critical first moments of an emergency.
+Astro Beat serves as a decision-support tool during the critical first moments of an emergency.
 
 ## Core Features
 
@@ -79,7 +79,7 @@ Each scenario triggers prioritized information, helping the astronaut understand
 
 During Mission Control communication blackouts:
 
-* AstroBeat processes data locally.
+* Astro Beat processes data locally.
 * Alerts remain active.
 * Events are logged on the device.
 * Data queues for synchronization and is sent to MCC once the connection is restored.
@@ -100,7 +100,7 @@ The prototype features pre-configured test scenarios:
 
 ## Hardware Vision
 
-The full AstroBeat concept involves:
+The full Astro Beat concept involves:
 
 1. Physiological and environmental sensors.
 2. A low-power wearable device.
@@ -119,7 +119,7 @@ Future iterations aim to integrate these sensors into a flexible, biocompatible 
 
 ## Project Status
 
-AstroBeat is a functional prototype built for educational, demonstration, and initial research purposes.
+Astro Beat is a functional prototype built for educational, demonstration, and initial research purposes.
 
 Currently:
 
@@ -131,7 +131,7 @@ Currently:
 
 ## Limitations
 
-AstroBeat is not a certified medical device and should not be used to diagnose, treat, or prevent any disease.
+Astro Beat is not a certified medical device and should not be used to diagnose, treat, or prevent any disease.
 
 Real-world implementation requires:
 
